@@ -3,3 +3,19 @@ __pycache__/
 *.pyc
 .env
 .ipynb_checkpoints/
+
+
+
+
+# IDE
+.vscode/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Database
+*.db
+
+# OS
+.DS_Store
+Thumbs.db

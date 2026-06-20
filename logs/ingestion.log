@@ -1,0 +1,14 @@
+2026-06-14 23:26:01,697 - INFO - Stock ingestion started
+2026-06-14 23:26:01,697 - INFO - Fetching data for AAPL
+2026-06-14 23:26:03,639 - INFO - Saved AAPL.csv
+2026-06-14 23:26:04,255 - INFO - Metadata saved for AAPL
+2026-06-14 23:26:04,256 - INFO - Fetching data for MSFT
+2026-06-14 23:26:04,561 - INFO - Saved MSFT.csv
+2026-06-14 23:26:05,787 - INFO - Metadata saved for MSFT
+2026-06-14 23:26:05,787 - INFO - Fetching data for RELIANCE.NS
+2026-06-14 23:26:06,156 - INFO - Saved RELIANCE_NS.csv
+2026-06-14 23:26:07,256 - INFO - Metadata saved for RELIANCE.NS
+2026-06-14 23:26:07,256 - INFO - Fetching data for TCS.NS
+2026-06-14 23:26:07,541 - INFO - Saved TCS_NS.csv
+2026-06-14 23:26:08,732 - INFO - Metadata saved for TCS.NS
+2026-06-14 23:26:08,732 - INFO - Stock ingestion completed
