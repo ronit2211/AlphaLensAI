@@ -1,3 +1,5 @@
+import pandas as pd
+
 import streamlit as st
 
 from screeners.screener import (
@@ -12,7 +14,10 @@ from screeners.ranking import (
 
 from screeners.trend import detect_trend
 
-from database.data_access import get_price_history
+from database.data_access import (
+    get_price_history,
+    get_company_info
+)
 
 from analytics.indicators import (
     calculate_sma,
@@ -24,6 +29,21 @@ from ai.stock_report import generate_stock_report
 
 from app.components.charts import create_price_chart
 
+def format_market_cap(value):
+
+    if value is None:
+        return "N/A"
+
+    if pd.isna(value):
+        return "N/A"
+
+    if value >= 1_00_00_00_00_000:
+        return f"₹{value/1_00_00_00_00_000:.2f} Lakh Cr"
+
+    elif value >= 1_00_00_00_000:
+        return f"₹{value/1_00_00_00_000:.2f} Cr"
+
+    return f"₹{value:,.0f}"
 
 def render():
 
@@ -47,6 +67,18 @@ def render():
         with st.spinner("Generating AI Analysis..."):
 
             metrics = analyze_stock(ticker)
+            company = get_company_info(ticker)
+
+            if not company.empty:
+                company_info = company.iloc[0]
+            else:
+                company_info = None
+
+
+            if ticker.endswith(".NS"):
+                price_display = f"₹{metrics['close_price']:.2f}"
+            else:
+                price_display = f"${metrics['close_price']:.2f}"
 
             prices = get_price_history(ticker)
 
@@ -54,6 +86,10 @@ def render():
             prices = calculate_sma(prices, 50)
             prices = calculate_rsi(prices)
             prices = calculate_macd(prices)
+
+            
+
+
 
             metrics["recommendation"] = (
                 evaluate_stock(metrics)
@@ -90,7 +126,7 @@ def render():
             with col1:
                 st.metric(
                     "Current Price",
-                    f"${metrics['close_price']:.2f}"
+                    price_display
                 )
 
             with col2:
@@ -157,6 +193,41 @@ MACD: {metrics['macd']:.2f}
             st.info(
                 f"📈 Trend: {metrics['trend']}"
             )
+            if company_info is not None:
+
+                st.markdown("---")
+
+                st.subheader("🏢 Company Information")
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+
+                    st.write(
+                        f"**Country:** {company_info['country'] or 'N/A'}"
+                    )
+
+                    st.write(
+                        f"**Currency:** {company_info['currency'] or 'N/A'}"
+                    )
+
+                    st.write(
+                        f"**Industry:** {company_info['industry'] or 'N/A'}"
+                    )
+
+                with col2:
+
+                    st.write(
+                        f"**Country:** {company_info['country']}"
+                    )
+
+                    st.write(
+                        f"**Currency:** {company_info['currency']}"
+                    )
+
+                    st.write(
+                        f"**Market Cap:** {format_market_cap(company_info['market_cap'])}"
+                    )
 
             chart = create_price_chart(
                 prices

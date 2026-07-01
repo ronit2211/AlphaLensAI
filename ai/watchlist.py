@@ -52,12 +52,18 @@ def get_watchlist_table():
 
     ranked = rank_stocks(results)
 
+    print("WATCHLIST COLUMNS:")
+    print(ranked.columns.tolist())
+
     return ranked[
         [
             "ticker",
+            "sector",
             "score",
+            "trend",
+            "risk",
             "rsi",
             "macd",
             "recommendation"
         ]
-    ].head(5)
+    ]

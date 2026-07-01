@@ -64,8 +64,19 @@ def render():
             else "AVOID"
         )
 
+        display_table = table[
+            [
+                "ticker",
+                "sector",
+                "score",
+                "trend",
+                "risk",
+                "recommendation"
+            ]
+        ]
+
         st.dataframe(
-            table.style.highlight_max(
+            display_table.style.highlight_max(
                 subset=["score"],
                 color="#1f6f43"
             ),
@@ -97,7 +108,6 @@ def render():
                 report = generate_watchlist()
 
             except Exception:
-
                 report = """
             AI analysis currently unavailable.
 

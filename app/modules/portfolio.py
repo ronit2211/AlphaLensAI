@@ -1,4 +1,11 @@
 import streamlit as st
+import pandas as pd
+import plotly.express as px
+from database.data_access import (
+    get_all_companies,
+    get_price_history,
+    get_company_info
+)
 
 
 def render():
@@ -6,120 +13,189 @@ def render():
     st.header("💼 Portfolio Analytics")
 
     st.caption(
-        "Analyze portfolio performance, risk, and diversification."
+        "Analyze portfolio performance and diversification."
     )
 
     st.markdown("---")
 
-    # ------------------------
-    # Metrics
-    # ------------------------
+    # Load all stocks from DB
 
-    col1, col2, col3, col4 = st.columns(4)
+    companies = get_all_companies()
 
-    with col1:
-        st.metric(
-            "Portfolio Return",
-            "12.4%",
-            "+2.1%"
+    portfolio_stocks = sorted(
+        companies["ticker"].tolist()
+    )
+
+    st.subheader("Add Holdings")
+
+    holding_count = st.number_input(
+        "Number of Holdings",
+        min_value=0,
+        max_value=20,
+        value=0
+    )
+
+    holdings = {}
+
+    fportfolio_stocks = ["Select Stock"] + sorted(
+    companies["ticker"].tolist()
+)
+
+    for i in range(holding_count):
+
+        ticker = st.selectbox(
+            f"Stock {i+1}",
+            portfolio_stocks,
+            index=0,
+            key=f"ticker_{i}"
         )
 
-    with col2:
-        st.metric(
-            "Volatility",
-            "18.2%",
-            "-1.3%"
+        qty = st.number_input(
+            f"Quantity {i+1}",
+            min_value=0,
+            value=0,
+            key=f"qty_{i}"
         )
 
-    with col3:
-        st.metric(
-            "Sharpe Ratio",
-            "1.41",
-            "+0.12"
-        )
-
-    with col4:
-        st.metric(
-            "Alpha Score",
-            "84/100"
-        )
+        if ticker != "Select Stock":
+            holdings[ticker] = qty
 
     st.markdown("---")
 
-    # ------------------------
-    # Risk
-    # ------------------------
+    portfolio_rows = []
 
-    st.subheader("⚠️ Risk Assessment")
+    total_value = 0
 
-    risk_level = "Moderate"
+    for ticker, qty in holdings.items():
 
-    if risk_level == "Low":
-        st.success("🟢 Low Risk")
+        try:
 
-    elif risk_level == "Moderate":
-        st.warning("🟡 Moderate Risk")
+            prices = get_price_history(ticker)
 
-    else:
-        st.error("🔴 High Risk")
+            latest_price = prices.iloc[-1]["close_price"]
+
+            company = get_company_info(ticker)
+
+            sector = "Unknown"
+
+            if not company.empty:
+                sector = company.iloc[0]["sector"]
+
+            value = latest_price * qty
+
+            total_value += value
+
+            portfolio_rows.append(
+                {
+                    "ticker": ticker,
+                    "sector": sector,
+                    "qty": qty,
+                    "price": round(latest_price, 2),
+                    "value": round(value, 2)
+                }
+            )
+
+        except Exception:
+            pass
+
+    if len(portfolio_rows) == 0:
+        st.warning("No holdings available.")
+        return
+
+    portfolio_df = pd.DataFrame(
+        portfolio_rows
+    )
+
+    st.subheader("Portfolio Holdings")
+
+    st.dataframe(
+        portfolio_df,
+        use_container_width=True
+    )
+
+    st.metric(
+        "Portfolio Value",
+        f"₹{total_value:,.2f}"
+    )
 
     st.markdown("---")
 
-    # ------------------------
-    # Portfolio Health
-    # ------------------------
+    # Sector Allocation
 
-    st.subheader("📊 Portfolio Health")
+    sector_df = (
+        portfolio_df
+        .groupby("sector")["value"]
+        .sum()
+        .reset_index()
+    )
 
-    health_score = 82
+    sector_df["allocation"] = (
+        sector_df["value"]
+        / total_value
+        * 100
+    )
+
+    st.subheader("Sector Allocation")
+
+    st.dataframe(
+        sector_df[
+            [
+                "sector",
+                "allocation"
+            ]
+        ],
+        use_container_width=True
+    )
+    fig = px.pie(
+        sector_df,
+        values="allocation",
+        names="sector",
+        title="Portfolio Sector Allocation"
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+    largest_sector = sector_df["allocation"].max()
+
+    diversification_score = max(
+        0,
+        100 - largest_sector
+    )
+
+    st.subheader(
+        "📊 Diversification Score"
+    )
 
     st.progress(
-        health_score / 100
+        diversification_score / 100
     )
 
     st.write(
-        f"Portfolio Health Score: {health_score}/100"
+        f"Score: {diversification_score:.0f}/100"
     )
+    if diversification_score >= 80:
+        st.success("🟢 Excellent Diversification")
 
-    st.markdown("---")
+    elif diversification_score >= 60:
+        st.info("🔵 Good Diversification")
 
-    # ------------------------
-    # Allocation
-    # ------------------------
+    elif diversification_score >= 40:
+        st.warning("🟡 Moderate Concentration")
 
-    st.subheader("🏦 Portfolio Allocation")
+    else:
+        st.error("🔴 Highly Concentrated Portfolio")
 
-    allocation = {
-        "AAPL": "40%",
-        "MSFT": "30%",
-        "RELIANCE.NS": "20%",
-        "TCS.NS": "10%"
-    }
+    top_sector = sector_df.sort_values(
+        by="allocation",
+        ascending=False
+    ).iloc[0]
 
-    st.table(allocation)
+    st.success(
+        f"""
+Top Sector: {top_sector['sector']}
 
-    st.markdown("---")
-
-    # ------------------------
-    # AI Commentary
-    # ------------------------
-
-    st.subheader("🤖 AI Portfolio Commentary")
-
-    st.info(
-        """
-Your portfolio is primarily concentrated in technology stocks.
-
-Strengths:
-• Strong growth potential
-• High quality companies
-
-Risks:
-• Sector concentration
-• Limited diversification
-
-Suggested Action:
-Consider adding exposure to Banking, Healthcare,
-or Consumer sectors.
+Allocation: {top_sector['allocation']:.2f}%
 """
     )

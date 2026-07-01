@@ -3,6 +3,8 @@ from screeners.ranking import (
     calculate_score,
     get_risk
 )
+from screeners.trend import detect_trend
+from database.data_access import get_company_info
 from analytics.indicators import (
     calculate_daily_returns,
     calculate_sma,
@@ -60,11 +62,20 @@ def screen_all_stocks():
 
     results = []
 
+    print(f"Total stocks in config: {len(STOCKS)}")
+
     for ticker in STOCKS:
 
         try:
 
             metrics = analyze_stock(ticker)
+
+            company = get_company_info(ticker)
+
+            if not company.empty:
+                metrics["sector"] = company.iloc[0]["sector"]
+            else:
+                metrics["sector"] = "Unknown"
 
             metrics["recommendation"] = evaluate_stock(metrics)
 
@@ -73,11 +84,20 @@ def screen_all_stocks():
             metrics["risk"] = get_risk(
                 metrics["score"]
             )
+            metrics["trend"] = detect_trend(
+                metrics
+            )
+            
 
             results.append(metrics)
 
+            print(f"SUCCESS: {ticker}")
+
         except Exception as e:
 
-            print(f"Error processing {ticker}: {e}")
+            print(f"FAILED: {ticker}")
+            print(e)
+
+    print(f"Final results: {len(results)}")
 
     return results

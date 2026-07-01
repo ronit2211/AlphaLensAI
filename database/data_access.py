@@ -16,6 +16,20 @@ def get_all_companies():
         engine
     )
 
+def get_company_info(ticker):
+
+    query = """
+    SELECT *
+    FROM companies
+    WHERE ticker = :ticker
+    """
+
+    return pd.read_sql(
+        text(query),
+        engine,
+        params={"ticker": ticker}
+    )
+
 
 def get_company_by_ticker(ticker):
 

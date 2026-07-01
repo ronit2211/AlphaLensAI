@@ -5,7 +5,8 @@ from app.modules import (
     stock_analysis,
     stock_comparison,
     watchlist,
-    portfolio
+    portfolio,
+    sector_watchlist
 )
 
 st.set_page_config(
@@ -74,7 +75,8 @@ page = st.sidebar.radio(
         "📈 Stock Analysis",
         "⚖️ Stock Comparison",
         "🔥 AI Watchlist",
-        "💼 Portfolio Analytics"
+        "💼 Portfolio Analytics",
+        "📊 Sector Watchlists",
     ]
 )
 
@@ -112,3 +114,6 @@ elif page == "🔥 AI Watchlist":
 
 elif page == "💼 Portfolio Analytics":
     portfolio.render()
+    
+elif page == "📊 Sector Watchlists":
+    sector_watchlist.render()
